@@ -1,0 +1,15 @@
+#!/bin/sh
+# q: one-shot web lookup. ddgr (DuckDuckGo) does the search, a small model reads the
+# snippets, nothing is saved. The instructions live in the ddg skill, so `/skill:ddg`
+# inside a session and `q` from a shell behave the same.
+#
+#   Q_SKILL  path to the skill's SKILL.md (default: next to this script in the repo)
+#   Q_MODEL  model for the lookup (default: claude-haiku-4-5)
+[ $# -gt 0 ] || { echo "usage: q <question>" >&2; exit 2; }
+here=$(dirname "$(readlink -f "$0")")
+skill=${Q_SKILL:-$here/../skills/ddg/SKILL.md}
+[ -r "$skill" ] || { echo "q: skill not found at $skill (set Q_SKILL)" >&2; exit 1; }
+cd "$HOME" || exit 1   # skip any project AGENTS.md chain: keeps the fixed context small
+exec omp -p --no-session --no-extensions --no-lsp --no-rules --no-title \
+	--model "${Q_MODEL:-claude-haiku-4-5}" --thinking off --tools bash,read \
+	--append-system-prompt "$skill" "$*"
